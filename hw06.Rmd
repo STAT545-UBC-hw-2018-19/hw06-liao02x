@@ -1,0 +1,460 @@
+---
+title: "STAT545 HW06"
+output:
+    html_document:
+        toc: true
+        number_sections: true
+---
+
+<style type="text/css">
+.twoC {width: 100%}
+.clearer {clear: both}
+.twoC table {max-width: 100%; float: left; max-height: 200px}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Character data
+
+To work with strings, first we should load the libraries.
+
+```{r}
+library(tidyverse)
+library(stringr)
+```
+
+Then after finished the strings chapter, we can begin to work on exercises.
+
+## Exercises 14.2.5
+
+1. In code that doesn’t use stringr, you’ll often see `paste()` and `paste0()`. What’s the difference between the two functions? What stringr function are they equivalent to? How do the functions differ in their handling of `NA`?
+
+```{r}
+paste("stat", "545")
+paste0("stat", "545")
+str_c("stat", NA)
+paste("stat", NA)
+```
+
+With `paste` you can specify a `sep` argument to seperate the strings. But with `paste0`, the `sep` argument is fixed to nothing. The corresponding stringr function is `str_c`. `str_c` will output `NA` if there is a `NA` in the middle, and `paste` will convert `NA` to a string "NA" and then do the `paste`.
+
+2. In your own words, describe the difference between the `sep` and `collapse` arguments to `str_c()`.
+
+```{r}
+str_c("stat", "545", c(101, 102), sep = " ")
+str_c("stat", "545", c(101, 102), sep = " ", collapse = ",")
+```
+
+`sep` argument seperates the strings to be merged, and with `collapse` the returned vector is merged again with `collapse` argument in between.
+
+3. Use `str_length()` and `str_sub()` to extract the middle character from a string. What will you do if the string has an even number of characters?
+
+```{r}
+x <- "abcdef"
+str_sub(x, str_length(x)/2+1, str_length(x)/2+1)
+```
+
+If the string has an even number of characters, this will select the latter one of the middle two characters.
+
+4. What does `str_wrap()` do? When might you want to use it?
+
+```{r}
+txt <- "What does `str_wrap()` do? When might you want to use it?"
+cat(str_wrap(txt, width = 40, indent = 2))
+```
+
+`str_wrap` takes the input string and output a print format string with line width constrain. When you want to write to a text file, you may want to use it.
+
+5. What does `str_trim()` do? What’s the opposite of `str_trim()`?
+
+```{r}
+txt <- "  What does `str_wrap()` do? When might you want to use it?  "
+str_trim(txt)
+str_pad(txt, 70, side = "both")
+```
+
+`str_trim` removes white spaces from one or both sides of the string. `str_pad` pads the string to some width with argument `pad`, and defaultly it is set to white space.
+
+6. Write a function that turns (e.g.) a vector `c("a", "b", "c")` into the string `a, b, and c`. Think carefully about what it should do if given a vector of length 0, 1, or 2.
+
+```{r}
+vector_3 <- c("a", "b", "c")
+vector_2 <- c("a", "b")
+vector_1 <- c("a")
+vector_0 <- c()
+and <- function(v) {
+  len <- length(v)
+  if (len %in% c(0, 1)) return(v)
+  if (len == 2) return(str_c(v, collapse = " and "))
+  v[len] <- paste("and ", v[len])
+  str_c(v, collapse = ", ")
+}
+and(vector_0)
+and(vector_1)
+and(vector_2)
+and(vector_3)
+```
+
+## Exercises 14.3.1.1
+
+1. Explain why each of these strings don’t match a `\`: `"\"`, `"\\"`, `"\\\"`.
+
+```{r}
+x <- "a\\b"
+str_view(x, "\\\\")
+```
+
+`"\"` is not a legal string, because `\"` would be one character, and same with `"\\\"`. `"\\"` is single `\` in the string, and when you make a string again, it goes back to `"\"` case.
+
+2. How would you match the sequence `"'\`?
+
+```{r}
+x <- "a\"\'\\b"
+str_view(x, "\"\'\\\\")
+```
+
+3. What patterns will the regular expression `\..\..\..` match? How would you represent it as a string?
+
+This matches dot splited 3 characters, like `".a.b.c"`. The string representation would be `"\\..\\..\\.."`.
+
+## Exercises 14.3.2.1
+
+1. How would you match the literal string `"$^$"`?
+
+```{r}
+x <- "$^$"
+str_view(x, "\\$\\^\\$")
+```
+
+2. Given the corpus of common words in `stringr::words`, create regular expressions that find all words that:
+- Start with “y”.
+- End with “x”
+- Are exactly three letters long. (Don’t cheat by using `str_length()`!)
+- Have seven letters or more.
+Since this list is long, you might want to use the 'match' argument to 'str_view()' to show only the matching or non-matching words.
+
+<div class="twoC">
+```{r}
+str_view(stringr::words, "^y", match = TRUE)
+str_view(stringr::words, "x$", match = TRUE)
+str_view(stringr::words, "^.{3}$", match = TRUE)
+str_view(stringr::words, "^.{7,}$", match = TRUE)
+```
+</div><div class="clearer"></div>
+
+## Exercises 14.3.3.1
+
+1. Create regular expressions to find all words that:
+- Start with a vowel.
+- That only contain consonants. (Hint: thinking about matching “not”-vowels.)
+- End with `ed`, but not with `eed`.
+- End with `ing` or `ise`.
+
+```{r}
+str_view(stringr::words, "^[aeiou]", match = TRUE)
+str_view(stringr::words, "^[^aeiou]*$", match = TRUE)
+str_view(stringr::words, "[^e]ed$", match = TRUE)
+str_view(stringr::words, "ing$|ise$", match = TRUE)
+```
+
+2. Empirically verify the rule “i before e except after c”.
+
+```{r}
+str_view(stringr::words, "[^c]ie", match = TRUE)
+```
+
+3. Is “q” always followed by a “u”?
+
+```{r}
+str_view(stringr::words, "q[^u]", match = TRUE)
+```
+Yes, it is.
+
+4. Write a regular expression that matches a word if it’s probably written in British English, not American English.
+
+```{r}
+str_view(stringr::words, "our$", match = TRUE)
+```
+
+5. Create a regular expression that will match telephone numbers as commonly written in your country.
+
+```{r}
+str_view("123(456)7890", "\\d{3}\\(\\d{3}\\)\\d{4}")
+```
+
+## Exercises 14.3.4.1
+
+1. Describe the equivalents of `?`, `+`, `*` in `{m,n}` form.
+
+`?` equals `{0,1}`. `+` equals `{1,}`. `*` equals `{0,}`. 
+
+2. Describe in words what these regular expressions match: (read carefully to see if I’m using a regular expression or a string that defines a regular expression.)
+- `^.*$` matches strings that start without `"\n"` and `"\r"`.
+- `"\\{.+\\}"` matches a brace with some charactors in between.
+- `\d{4}-\d{2}-\d{2}` matches something like a date, for example "2018-01-01".
+- `"\\\\{4}"` matches four `\` in a row.
+
+3. Create regular expressions to find all words that:
+- Start with three consonants.
+- Have three or more vowels in a row.
+- Have two or more vowel-consonant pairs in a row.
+
+```{r}
+str_view(stringr::words, "^[^aeiou]{3}", match = TRUE)
+str_view(stringr::words, "[aeiou]{3,}", match = TRUE)
+str_view(stringr::words, "([aeiou][^aeiou]){2,}", match = TRUE)
+```
+
+4. Solve the beginner regexp crosswords at https://regexcrossword.com/challenges/beginner.
+
+
+
+
+## Exercises 14.3.5.1
+
+1. Describe, in words, what these expressions will match:
+- `(.)\1\1` matches three same characters in a row.
+- `"(.)(.)\\2\\1"` matches two same characters with other two same characters in between, for example "abba".
+- `(..)\1` matches two characters repeat twice, for example "abab".
+- `"(.).\\1.\\1"` matches three same characters with other two characters in between, for example "abaca".
+- `"(.)(.)(.).*\\3\\2\\1"` matches something like "abc1234abcdcba".
+
+2. Construct regular expressions to match words that:
+- Start and end with the same character. 
+- Contain a repeated pair of letters (e.g. “church” contains “ch” repeated twice.)
+- Contain one letter repeated in at least three places (e.g. “eleven” contains three “e”s.)
+
+```{r}
+str_view(stringr::words, "^(.).*\\1$", match = TRUE)
+str_view(stringr::words, "^(..).*\\1.*$", match = TRUE)
+str_view(stringr::words, "^.*(.).*(\\1.*){2,}$", match = TRUE)
+```
+
+## Exercises 14.4.2
+
+1. For each of the following challenges, try solving it by using both a single regular expression, and a combination of multiple `str_detect()` calls.
+- Find all words that start or end with `x`.
+- Find all words that start with a vowel and end with a consonant.
+- Are there any words that contain at least one of each different vowel?
+
+```{r}
+str_view(stringr::words, "^x|x$", match = TRUE)
+str_view(stringr::words, "^[aeiou].*[^aeiou]$", match = TRUE)
+str_view(stringr::words, "(?=.*a)(?=.*e)(?=.*i)(?=.*o)(?=.*u)", match = TRUE)
+```
+
+
+```{r}
+words <- tibble(
+  words = stringr::words
+)
+
+words %>%
+  filter(str_detect(words, "^x|x$"))
+
+words %>%
+  filter(str_detect(words, "^[aeiou].*[^aeiou]$"))
+
+words %>%
+  filter(str_detect(words, "(?=.*a)(?=.*e)(?=.*i)(?=.*o)(?=.*u)"))
+```
+
+
+2. What word has the highest number of vowels? What word has the highest proportion of vowels? (Hint: what is the denominator?)
+
+```{r}
+words <- words %>% 
+  mutate(
+    vowels = str_count(words, "[aeiou]"),
+    proportion = str_count(words, "[aeiou]") / str_count(words, ".")
+  )
+
+words %>%
+  arrange(desc(vowels)) %>%
+  head()
+
+words %>%
+  arrange(desc(proportion)) %>%
+  head()
+```
+
+## Exercises 14.4.3.1
+
+1. In the previous example, you might have noticed that the regular expression matched “flickered”, which is not a colour. Modify the regex to fix the problem.
+
+```{r}
+colours <- c("red", "orange", "yellow", "green", "blue", "purple")
+colour_match <- str_c("\\s", colours, collapse = "|")
+more <- sentences[str_count(sentences, colour_match) > 1]
+str_view_all(more, colour_match)
+```
+
+2. From the Harvard sentences data, extract:
+- The first word from each sentence.
+- All words ending in `ing`.
+- All plurals.
+
+```{r}
+str_view_all(sentences, "^.*?\\s")
+str_view_all(sentences, "\\w*ing\\s", match = TRUE)
+str_view_all(sentences, "es\\s", match = TRUE)
+```
+
+## Exercises 14.4.4.1
+
+1. Find all words that come after a “number” like “one”, “two”, “three” etc. Pull out both the number and the word.
+
+```{r}
+noun <- "\\s(one|two|three)\\s*\\w+"
+has_num <- sentences %>%
+  str_subset(noun)
+has_num %>%
+  str_extract(noun)
+```
+
+2. Find all contractions. Separate out the pieces before and after the apostrophe.
+
+```{r}
+con <- "\\w*\'\\w*"
+has_con <- sentences %>%
+  str_subset(con)
+has_con %>%
+  str_extract(con)
+```
+
+## Exercises 14.4.5.1
+
+1. Replace all forward slashes in a string with backslashes.
+
+```{r}
+x <- "\\\\a//b\\c///d\\\\"
+str_replace_all(x, "\\\\", "/")
+```
+
+2. Implement a simple version of `str_to_lower()` using `replace_all()`.
+
+```{r}
+x <- "AaBbCcDd"
+names(letters) <- LETTERS
+str_replace_all(x, letters)
+```
+
+3. Switch the first and last letters in `words`. Which of those strings are still words?
+
+```{r}
+str_replace_all(stringr::words, "(\\w)(\\w*)(\\w)", "\\3\\2\\1") %>% head()
+```
+
+## Exercises 14.4.6.1
+
+1. Split up a string like `"apples, pears, and bananas"` into individual components.
+
+```{r}
+x <- "apples, pears, and bananas"
+str_split(x, "(, and )|(, )")
+```
+
+2. Why is it better to split up by `boundary("word")` than " "?
+
+```{r}
+str_split(x, " ")
+str_split(x, boundary("word"))
+```
+
+`boundary` can automatically remove white spaces and other signs, including comma and dot.
+
+3. What does splitting with an empty `string ("")` do? Experiment, and then read the documentation.
+
+```{r}
+str_split(x, "")
+```
+
+It splits the string into characters.
+
+## Exercises 14.5.1
+
+1. How would you find all strings containing `\` with `regex()` vs. with `fixed()`?
+
+```{r}
+x <- "\\\\a//b\\c///d\\\\"
+str_view_all(x, regex("\\\\"))
+str_view_all(x, fixed("\\"))
+```
+
+2. What are the five most common words in `sentences`?
+
+```{r}
+words_in_s <- 
+  str_split(sentences, boundary("word")) %>%
+  unlist() %>%
+  str_to_lower()
+as.data.frame(table(words_in_s)) %>% 
+  arrange(desc(Freq)) %>%
+  head(5)
+```
+
+## Exercises 14.7.1
+
+1. Find the stringi functions that:
+- Count the number of words. `stringi::stri_count_words()`
+- Find duplicated strings. `stringi::stri_duplicated()`
+- Generate random text. `stringi::stri_rand_strings()`
+
+2. How do you control the language that `stri_sort()` uses for sorting?
+
+By `locale` argument. For example: 
+
+`stri_sort(c("hladny", "chladny"), locale="sk_SK")`
+
+# Write function
+
+Write one (or more) functions that do something useful to pieces of the Gapminder or Singer data. It is logical to think about computing on the mini-data frames corresponding to the data for each specific country, location, year, band, album, … This would pair well with the prompt below about working with a nested data frame, as you could apply your function there.
+
+Make it something you can’t easily do with built-in functions. Make it something that’s not trivial to do with the simple dplyr verbs. The linear regression function presented here is a good starting point. You could generalize that to do quadratic regression (include a squared term) or use robust regression, using `MASS::rlm()` or `robustbase::lmrob()`.
+
+```{r}
+library(gapminder)
+gap_cad <- gapminder %>% 
+  filter(country == "Canada") %>%
+  mutate(
+    year_m = year - 1952
+  )
+p <- ggplot(gap_cad, aes(x = year, y = lifeExp))
+p + geom_point() + geom_smooth(method = "lm", se = FALSE)
+```
+
+`le_qua_fit` is a function for quadratic regression. We can see that for countries like Zimbabwe, it is a better fit than the linear regression.
+
+```{r}
+le_lin_fit <- function(dat, offset = 1952) {
+  the_fit <- lm(lifeExp ~ I(year - offset), dat)
+  setNames(coef(the_fit), c("intercept", "slope"))
+}
+
+le_qua_fit <- function(dat, offset = 1952) {
+  the_fit <- lm(lifeExp ~ poly(year - offset, 2, raw = TRUE), dat)
+  setNames(coef(the_fit), c("intercept", "poly 1", "poly 2"))
+}
+
+gap_zim <- gapminder %>% filter(country == "Zimbabwe")
+(model_lin <- le_lin_fit(gap_zim))
+(model_qua <- le_qua_fit(gap_zim))
+
+years = seq(1952, 2007, 5)
+le_fit = tibble(
+  year = years,
+  le_lin = model_lin[1] + (years - 1952) * model_lin[2],
+  le_qua = model_qua[1] + (years - 1952) * model_qua[2] + (years - 1952)^2 * model_qua[3]
+)
+
+ggplot(gap_zim, aes(x = year, y = lifeExp)) + 
+  geom_point() +
+  geom_line(aes(x = year, y = le_lin), le_fit, color = "blue") +
+  geom_line(aes(x = year, y = le_qua), le_fit, color = "red")
+```
+
+
+
+
